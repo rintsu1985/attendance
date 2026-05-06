@@ -459,7 +459,7 @@
         </div>
       </div>
       <button class="record-btn" onclick="showModal('recordModal')">📝 本日の集計を記録する</button>
-      <button class="excel-btn" onclick="exportForExcel()">📊 Excelに反映（クラウドに保存）</button>
+      <button class="excel-btn" onclick="exportForExcel()">📊 Excelに反映（出勤データをダウンロード）</button>
     </div>
   </div>
 </div>
@@ -716,6 +716,7 @@ function showModal(id) {
   if (id === 'recordModal') {
     const t = calcTotals();
     const dateStr = todayStr();
+    // 同日記録の有無チェック
     const dup = history.find(r => r.date === dateStr);
     const dupNote = dup ? '<br><small style="color:#e74c3c;">※本日の記録がすでにあります（上書きされます）</small>' : '';
     document.getElementById('recordPreview').innerHTML =
@@ -729,10 +730,11 @@ function hideModal(id) { document.getElementById(id).classList.remove('show'); }
 function saveRecord() {
   const t = calcTotals();
   const dateStr = todayStr();
+  // 同日データがあれば上書き
   const dupIdx = history.findIndex(r => r.date === dateStr);
   const record = { date: dateStr, attend: t.attend, sanwa: t.sanwa, clever: t.clever, bento: t.bento };
   if (dupIdx >= 0) history[dupIdx] = record;
-  else history.unshift(record);
+  else history.unshift(record); // 新しいものを先頭に
   saveHistory();
   hideModal('recordModal');
   showToast('✅ 記録しました！');
@@ -828,11 +830,19 @@ async function exportForExcel() {
   const data = { date: dateStr, present: present };
   const json = JSON.stringify(data, null, 2);
 
-  const TOKEN    = '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';
-  const API_URL  = 'https://api.github.com/repos/rintsu1985/attendance/contents/attendance_data.json';
+  // URLハッシュからトークンを取得（例: ...attendance.html#key=TOKEN）
+  const TOKEN = new URLSearchParams(location.hash.slice(1)).get('key') || '';
+  const API_URL = 'https://api.github.com/repos/rintsu1985/attendance/contents/attendance_data.json';
 
   // 保存中トースト
   const el = document.getElementById('toast');
+  if (!TOKEN) {
+    el.textContent = '❌ URLにトークンが設定されていません';
+    el.style.background = '#e74c3c';
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 4000);
+    return;
+  }
   el.textContent = '⏳ クラウドに保存中...';
   el.style.background = '#2e86c1';
   el.classList.add('show');
