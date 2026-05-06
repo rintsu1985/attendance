@@ -459,7 +459,7 @@
         </div>
       </div>
       <button class="record-btn" onclick="showModal('recordModal')">📝 本日の集計を記録する</button>
-      <button class="excel-btn" onclick="exportForExcel()">📊 Excelに反映（出勤データをダウンロード）</button>
+      <button class="excel-btn" onclick="exportForExcel()">📊 Excelに反映（クラウドに保存）</button>
     </div>
   </div>
 </div>
@@ -716,7 +716,6 @@ function showModal(id) {
   if (id === 'recordModal') {
     const t = calcTotals();
     const dateStr = todayStr();
-    // 同日記録の有無チェック
     const dup = history.find(r => r.date === dateStr);
     const dupNote = dup ? '<br><small style="color:#e74c3c;">※本日の記録がすでにあります（上書きされます）</small>' : '';
     document.getElementById('recordPreview').innerHTML =
@@ -730,11 +729,10 @@ function hideModal(id) { document.getElementById(id).classList.remove('show'); }
 function saveRecord() {
   const t = calcTotals();
   const dateStr = todayStr();
-  // 同日データがあれば上書き
   const dupIdx = history.findIndex(r => r.date === dateStr);
   const record = { date: dateStr, attend: t.attend, sanwa: t.sanwa, clever: t.clever, bento: t.bento };
   if (dupIdx >= 0) history[dupIdx] = record;
-  else history.unshift(record); // 新しいものを先頭に
+  else history.unshift(record);
   saveHistory();
   hideModal('recordModal');
   showToast('✅ 記録しました！');
@@ -813,9 +811,9 @@ function clearAllHistory() {
 }
 
 // ====================================================
-//  Excel連携用JSONダウンロード
+//  Excel連携用クラウド保存
 // ====================================================
-function exportForExcel() {
+async function exportForExcel() {
   const present = [];
   MEMBERS.forEach((m, i) => {
     if (state.attend[i]) present.push(m.name);
@@ -824,18 +822,59 @@ function exportForExcel() {
     showToast('出勤者にチェックをつけてください', true);
     return;
   }
+
   const now = new Date();
   const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
   const data = { date: dateStr, present: present };
   const json = JSON.stringify(data, null, 2);
-  const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = '出勤データ.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('✅ 出勤データをダウンロードしました！次に「出勤Excel反映.bat」を実行してください');
+
+  const TOKEN    = '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';
+  const API_URL  = 'https://api.github.com/repos/rintsu1985/attendance/contents/attendance_data.json';
+
+  // 保存中トースト
+  const el = document.getElementById('toast');
+  el.textContent = '⏳ クラウドに保存中...';
+  el.style.background = '#2e86c1';
+  el.classList.add('show');
+
+  try {
+    // 既存ファイルのSHAを取得（更新に必要）
+    let sha = '';
+    const getResp = await fetch(API_URL, {
+      headers: { 'Authorization': `Bearer ${TOKEN}` }
+    });
+    if (getResp.ok) {
+      const existing = await getResp.json();
+      sha = existing.sha;
+    }
+
+    // Base64エンコード
+    const content = btoa(unescape(encodeURIComponent(json)));
+    const body = { message: `出勤データ ${dateStr}`, content };
+    if (sha) body.sha = sha;
+
+    const putResp = await fetch(API_URL, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (putResp.ok) {
+      el.textContent = '✅ 保存完了！PCで「出勤Excel反映.bat」を実行してください';
+      el.style.background = '#27ae60';
+      setTimeout(() => el.classList.remove('show'), 4000);
+    } else {
+      throw new Error('HTTP ' + putResp.status);
+    }
+  } catch (e) {
+    el.textContent = '❌ 保存失敗。通信を確認してください';
+    el.style.background = '#e74c3c';
+    setTimeout(() => el.classList.remove('show'), 3000);
+    console.error(e);
+  }
 }
 
 // ====================================================
