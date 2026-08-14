@@ -150,6 +150,10 @@
       white-space: nowrap;
       font-weight: bold;
     }
+    .bento-badge.nagata {
+      background: #e6f0fb;
+      color: #1f6aa5;
+    }
 
     .check-cell { display: flex; justify-content: center; }
     .check-btn {
@@ -190,7 +194,7 @@
     }
     .summary-counts {
       display: flex;
-      gap: 8px;
+      gap: 5px;
       align-items: stretch;
       margin-bottom: 9px;
     }
@@ -207,20 +211,21 @@
       align-items: center;
       background: rgba(255,255,255,0.15);
       border-radius: 7px;
-      padding: 5px 10px;
+      padding: 5px 3px;   /* 6枚を横一列に収めるため左右を詰める */
       flex: 1;
+      min-width: 0;
     }
     .summary-card .s-label {
-      font-size: 0.65rem;
+      font-size: 0.58rem;
       opacity: 0.85;
       white-space: nowrap;
     }
     .summary-card .s-count {
-      font-size: 1.35rem;
+      font-size: 1.1rem;
       font-weight: bold;
       line-height: 1.1;
     }
-    .summary-card .s-unit { font-size: 0.65rem; opacity: 0.8; }
+    .summary-card .s-unit { font-size: 0.58rem; opacity: 0.8; white-space: nowrap; }
     .summary-card.highlight { background: rgba(255,255,255,0.25); }
     .summary-divider {
       width: 1px;
@@ -425,7 +430,7 @@
 
   <div class="list-container">
     <div class="table-header">
-      <div class="col-name">氏名　<span style="font-size:0.68rem;opacity:0.8;font-weight:normal;">（弁）= 弁当あり</span></div>
+      <div class="col-name">氏名　<span style="font-size:0.68rem;opacity:0.8;font-weight:normal;">（弁）= 弁当　（長田弁）= 長田分</span></div>
       <div>出 勤</div>
     </div>
     <div id="personList"></div>
@@ -435,26 +440,35 @@
   <div class="summary-footer" id="summaryFooter">
     <div class="summary-inner">
       <div class="summary-counts">
-        <span class="summary-label">集計</span>
         <div class="summary-card">
-          <span class="s-label">出勤人数</span>
+          <span class="s-label">出勤</span>
           <span class="s-count" id="totalAttend">0</span>
-          <span class="s-unit">名 / <span id="totalAll">0</span>名</span>
+          <span class="s-unit">/<span id="totalAll">0</span>名</span>
         </div>
         <div class="summary-divider"></div>
         <div class="summary-card">
-          <span class="s-label">三和 弁当</span>
+          <span class="s-label">三和</span>
           <span class="s-count" id="totalSanwa">0</span>
           <span class="s-unit">個</span>
         </div>
         <div class="summary-card">
-          <span class="s-label">クレバー 弁当</span>
+          <span class="s-label">ク</span>
           <span class="s-count" id="totalClever">0</span>
           <span class="s-unit">個</span>
         </div>
         <div class="summary-card highlight">
-          <span class="s-label">弁当 合計</span>
+          <span class="s-label">合計</span>
           <span class="s-count" id="totalBento">0</span>
+          <span class="s-unit">個</span>
+        </div>
+        <div class="summary-card">
+          <span class="s-label">長田:三和</span>
+          <span class="s-count" id="totalNSanwa">0</span>
+          <span class="s-unit">個</span>
+        </div>
+        <div class="summary-card">
+          <span class="s-label">長田:ク</span>
+          <span class="s-count" id="totalNClever">0</span>
           <span class="s-unit">個</span>
         </div>
       </div>
@@ -533,61 +547,65 @@
 // ====================================================
 //  名簿データ
 // ====================================================
+// bentoGroup: "sanwa" | "clever" | "n_sanwa"(長田:三和) | "n_clever"(長田:ク) | null
 const MEMBERS = [
-  { name: "天野信也",   prefix: "",   bentoGroup: "sanwa"  },
-  { name: "天野聖真",   prefix: "",   bentoGroup: null     },
-  { name: "植田憲行",   prefix: "",   bentoGroup: null     },
-  { name: "天野麗真",   prefix: "",   bentoGroup: null     },
-  { name: "天野龍真",   prefix: "",   bentoGroup: null     },
-  { name: "和田周一郎", prefix: "",   bentoGroup: null     },
-  { name: "岩満明治",   prefix: "",   bentoGroup: null     },
-  { name: "仲田政彦",   prefix: "",   bentoGroup: "sanwa"  },
-  { name: "宮本栄次",   prefix: "",   bentoGroup: "sanwa"  },
-  { name: "中川善道",   prefix: "ク", bentoGroup: "clever" },
-  { name: "池月英利",   prefix: "ク", bentoGroup: "clever" },
-  { name: "串田 崇",    prefix: "ク", bentoGroup: "clever" },
-  { name: "梅林孝訓",   prefix: "ト", bentoGroup: null     },
-  { name: "斉田禎樹",   prefix: "ト", bentoGroup: null     },
-  { name: "徳田恭平",   prefix: "ト", bentoGroup: null     },
-  { name: "播摩揮由",   prefix: "ク", bentoGroup: "clever" },
-  { name: "長谷川和騎", prefix: "ク", bentoGroup: "clever" },
-  { name: "福田吉昌",   prefix: "応", bentoGroup: "sanwa"  },
-  { name: "広末誠二",   prefix: "",   bentoGroup: null     },
-  { name: "岡田秀行",   prefix: "",   bentoGroup: "sanwa"  },
-  { name: "櫻井優紀",   prefix: "",   bentoGroup: null     },
-  { name: "中村隆宣",   prefix: "",   bentoGroup: null     },
-  { name: "谷山翔太",   prefix: "",   bentoGroup: null     },
-  { name: "廣田将英",   prefix: "ト", bentoGroup: null     },
-  { name: "徳田詔太",   prefix: "ト", bentoGroup: null     },
-  { name: "中谷晃司",   prefix: "",   bentoGroup: null     },
-  { name: "横尾美紀",   prefix: "",   bentoGroup: null     },
-  { name: "広末海斗",   prefix: "",   bentoGroup: null     },
-  { name: "内田好一",   prefix: "",   bentoGroup: null     },
-  { name: "上村浩彰",   prefix: "",   bentoGroup: "sanwa"  },
-  { name: "羽島裕司",   prefix: "",   bentoGroup: "sanwa"  },
-  { name: "上村勇二",   prefix: "",   bentoGroup: "sanwa"  },
-  { name: "山本 到",    prefix: "",   bentoGroup: "sanwa"  },
-  { name: "田野喜一",   prefix: "",   bentoGroup: "sanwa"  },
-  { name: "中谷美涼",   prefix: "",   bentoGroup: "sanwa"  },
-  { name: "半田正勝",   prefix: "ク", bentoGroup: "clever" },
-  { name: "横尾文男",   prefix: "ク", bentoGroup: "clever" },
-  { name: "冨名腰雄樹", prefix: "ク", bentoGroup: "clever" },
-  { name: "西尾 学",    prefix: "ク", bentoGroup: "clever" },
-  { name: "広末望海",   prefix: "日", bentoGroup: "sanwa"  },
-  { name: "森 卓也",    prefix: "和", bentoGroup: null     },
-  { name: "中谷雅輝",   prefix: "日", bentoGroup: "sanwa"  },
-  { name: "中谷陽生",   prefix: "日", bentoGroup: "sanwa"  },
-  { name: "中谷夢愛",   prefix: "日", bentoGroup: "sanwa"  },
-  { name: "竹内俊博",   prefix: "",   bentoGroup: null     },
-  { name: "作 英樹",    prefix: "",   bentoGroup: "sanwa"  },
-  { name: "殖田 学",    prefix: "",   bentoGroup: "sanwa"  },
-  { name: "小倉伸司",   prefix: "",   bentoGroup: "sanwa"  }
+  { name: "天野信也",   prefix: "",   bentoGroup: "sanwa"    },
+  { name: "天野聖真",   prefix: "",   bentoGroup: null       },
+  { name: "植田憲行",   prefix: "",   bentoGroup: null       },
+  { name: "天野麗真",   prefix: "",   bentoGroup: null       },
+  { name: "天野龍真",   prefix: "",   bentoGroup: null       },
+  { name: "和田周一郎", prefix: "",   bentoGroup: null       },
+  { name: "岩満明治",   prefix: "",   bentoGroup: null       },
+  { name: "仲田政彦",   prefix: "",   bentoGroup: "sanwa"    },
+  { name: "宮本栄次",   prefix: "",   bentoGroup: "sanwa"    },
+  { name: "中川善道",   prefix: "ク", bentoGroup: "clever"   },
+  { name: "池月英利",   prefix: "ク", bentoGroup: "clever"   },
+  { name: "梅林孝訓",   prefix: "ト", bentoGroup: null       },
+  { name: "播摩揮由",   prefix: "ク", bentoGroup: "clever"   },
+  { name: "長谷川和騎", prefix: "ク", bentoGroup: "clever"   },
+  { name: "福田吉昌",   prefix: "応", bentoGroup: "sanwa"    },
+  { name: "広末誠二",   prefix: "",   bentoGroup: null       },
+  { name: "岡田秀行",   prefix: "",   bentoGroup: "sanwa"    },
+  { name: "櫻井優紀",   prefix: "",   bentoGroup: null       },
+  { name: "中村隆宣",   prefix: "",   bentoGroup: null       },
+  { name: "廣田将英",   prefix: "ト", bentoGroup: null       },
+  { name: "中谷晃司",   prefix: "",   bentoGroup: null       },
+  { name: "横尾美紀",   prefix: "",   bentoGroup: null       },
+  { name: "広末海斗",   prefix: "",   bentoGroup: null       },
+  { name: "上村浩彰",   prefix: "",   bentoGroup: "sanwa"    },
+  { name: "上村勇二",   prefix: "",   bentoGroup: "sanwa"    },
+  { name: "広末望海",   prefix: "",   bentoGroup: "sanwa"    },
+  { name: "半田正勝",   prefix: "ク", bentoGroup: "clever"   },
+  { name: "冨名腰雄樹", prefix: "ク", bentoGroup: "clever"   },
+  { name: "西尾 学",    prefix: "ク", bentoGroup: "clever"   },
+  { name: "森 卓也",    prefix: "和", bentoGroup: null       },
+  { name: "斉田禎樹",   prefix: "ト", bentoGroup: null       },
+  { name: "中谷雅輝",   prefix: "日", bentoGroup: "sanwa"    },
+  { name: "中谷陽生",   prefix: "日", bentoGroup: "sanwa"    },
+  { name: "中谷夢愛",   prefix: "日", bentoGroup: "sanwa"    },
+  { name: "谷山翔太",   prefix: "",   bentoGroup: null       },
+  { name: "内田好一",   prefix: "",   bentoGroup: null       },
+
+  // ===== ここから長田（11名） =====
+  { name: "竹内俊博",   prefix: "",   bentoGroup: null       },
+  { name: "作 英樹",    prefix: "",   bentoGroup: "n_sanwa"  },
+  { name: "殖田 学",    prefix: "",   bentoGroup: "n_sanwa"  },
+  { name: "小倉伸司",   prefix: "",   bentoGroup: "n_sanwa"  },
+  { name: "中谷美涼",   prefix: "",   bentoGroup: "n_sanwa"  },
+  { name: "山本 到",    prefix: "",   bentoGroup: "n_sanwa"  },
+  { name: "横尾文男",   prefix: "ク", bentoGroup: "n_clever" },
+  { name: "徳田詔太",   prefix: "ト", bentoGroup: null       },
+  { name: "羽島裕司",   prefix: "",   bentoGroup: "n_sanwa"  },
+  { name: "田野喜一",   prefix: "",   bentoGroup: "n_sanwa"  },
+  { name: "明石雅史",   prefix: "",   bentoGroup: "n_sanwa"  }
 ];
 
 // ====================================================
 //  ストレージキー
 // ====================================================
-const KEY_STATE   = 'attendance_v2';
+// v3: 出勤チェックの保存キーを「並び順の番号」から「氏名」に変更。
+//     名簿の追加・削除で前回のチェックが別人にズレる問題を防ぐため。
+const KEY_STATE   = 'attendance_v3';
 const KEY_HISTORY = 'attendance_history_v1';
 
 // ====================================================
@@ -598,9 +616,18 @@ let history = loadHistory();
 let pendingDelIdx = null;
 
 function loadState() {
-  try { const s = localStorage.getItem(KEY_STATE); if (s) return JSON.parse(s); } catch(e) {}
+  try {
+    const s = localStorage.getItem(KEY_STATE);
+    if (s) {
+      const parsed = JSON.parse(s);
+      if (parsed && parsed.attend) return parsed;
+    }
+  } catch(e) {}
   return { attend: {} };
 }
+// 氏名をキーにする（表記ゆれ・スペース差を吸収）
+function keyOf(m) { return String(m.name).replace(/[\s　]/g, ''); }
+function isAttend(m) { return !!state.attend[keyOf(m)]; }
 function saveState() {
   try {
     localStorage.setItem(KEY_STATE, JSON.stringify(state));
@@ -635,7 +662,7 @@ function buildList() {
   const container = document.getElementById('personList');
   container.innerHTML = '';
   MEMBERS.forEach((m, idx) => {
-    const attend = !!state.attend[idx];
+    const attend = isAttend(m);
     const row = document.createElement('div');
     row.className = 'person-row' + (attend ? '' : ' absent');
     row.id = 'row-' + idx;
@@ -645,7 +672,11 @@ function buildList() {
     let inner = '';
     if (m.prefix) inner += `<span class="prefix-badge">${m.prefix}</span>`;
     inner += `<span class="pname-text">${m.name}</span>`;
-    if (m.bentoGroup) inner += `<span class="bento-badge">（弁）</span>`;
+    if (m.bentoGroup) {
+      const isNagata = m.bentoGroup.indexOf('n_') === 0;
+      inner += `<span class="bento-badge${isNagata ? ' nagata' : ''}">`
+             + (isNagata ? '（長田弁）' : '（弁）') + `</span>`;
+    }
     nameDiv.innerHTML = inner;
 
     const cell = document.createElement('div');
@@ -667,9 +698,10 @@ function buildList() {
 //  出勤トグル
 // ====================================================
 function toggleAttend(idx) {
-  state.attend[idx] = !state.attend[idx];
+  const m = MEMBERS[idx];
+  state.attend[keyOf(m)] = !state.attend[keyOf(m)];
   saveState();
-  const attend = state.attend[idx];
+  const attend = isAttend(m);
   const row = document.getElementById('row-' + idx);
   row.className = 'person-row' + (attend ? '' : ' absent');
   const btn = row.querySelector('.check-btn');
@@ -682,31 +714,36 @@ function toggleAttend(idx) {
 //  集計計算
 // ====================================================
 function calcTotals() {
-  let attend = 0, sanwa = 0, clever = 0;
-  MEMBERS.forEach((m, i) => {
-    if (state.attend[i]) {
+  let attend = 0, sanwa = 0, clever = 0, nSanwa = 0, nClever = 0;
+  MEMBERS.forEach((m) => {
+    if (isAttend(m)) {
       attend++;
-      if (m.bentoGroup === 'sanwa')  sanwa++;
-      if (m.bentoGroup === 'clever') clever++;
+      if (m.bentoGroup === 'sanwa')    sanwa++;
+      if (m.bentoGroup === 'clever')   clever++;
+      if (m.bentoGroup === 'n_sanwa')  nSanwa++;
+      if (m.bentoGroup === 'n_clever') nClever++;
     }
   });
-  return { attend, sanwa, clever, bento: sanwa + clever };
+  // 「合計」は三和＋クのみ。長田分は合計に含めない。
+  return { attend, sanwa, clever, nSanwa, nClever, bento: sanwa + clever };
 }
 
 function updateSummary() {
   const t = calcTotals();
-  document.getElementById('totalAll').textContent    = MEMBERS.length;
-  document.getElementById('totalAttend').textContent = t.attend;
-  document.getElementById('totalSanwa').textContent  = t.sanwa;
-  document.getElementById('totalClever').textContent = t.clever;
-  document.getElementById('totalBento').textContent  = t.bento;
+  document.getElementById('totalAll').textContent     = MEMBERS.length;
+  document.getElementById('totalAttend').textContent  = t.attend;
+  document.getElementById('totalSanwa').textContent   = t.sanwa;
+  document.getElementById('totalClever').textContent  = t.clever;
+  document.getElementById('totalBento').textContent   = t.bento;
+  document.getElementById('totalNSanwa').textContent  = t.nSanwa;
+  document.getElementById('totalNClever').textContent = t.nClever;
 }
 
 // ====================================================
 //  一括操作
 // ====================================================
-function checkAll()   { MEMBERS.forEach((_,i) => { state.attend[i] = true;  }); saveState(); buildList(); }
-function uncheckAll() { MEMBERS.forEach((_,i) => { state.attend[i] = false; }); saveState(); buildList(); }
+function checkAll()   { MEMBERS.forEach(m => { state.attend[keyOf(m)] = true;  }); saveState(); buildList(); }
+function uncheckAll() { MEMBERS.forEach(m => { state.attend[keyOf(m)] = false; }); saveState(); buildList(); }
 function resetAll()   { state = { attend: {} }; saveState(); hideModal('resetModal'); buildList(); }
 
 // ====================================================
@@ -720,7 +757,9 @@ function showModal(id) {
     const dup = history.find(r => r.date === dateStr);
     const dupNote = dup ? '<br><small style="color:#e74c3c;">※本日の記録がすでにあります（上書きされます）</small>' : '';
     document.getElementById('recordPreview').innerHTML =
-      `<strong>${dateStr}</strong><br>出勤 ${t.attend}名　三和弁当 ${t.sanwa}個　クレバー弁当 ${t.clever}個　合計弁当 ${t.bento}個${dupNote}`;
+      `<strong>${dateStr}</strong><br>出勤 ${t.attend}名<br>`
+      + `三和 ${t.sanwa}個　ク ${t.clever}個　合計 ${t.bento}個<br>`
+      + `長田:三和 ${t.nSanwa}個　長田:ク ${t.nClever}個${dupNote}`;
   }
   if (id === 'delRowModal' && pendingDelIdx === null) return;
   document.getElementById(id).classList.add('show');
@@ -732,7 +771,12 @@ function saveRecord() {
   const dateStr = todayStr();
   // 同日データがあれば上書き
   const dupIdx = history.findIndex(r => r.date === dateStr);
-  const record = { date: dateStr, attend: t.attend, sanwa: t.sanwa, clever: t.clever, bento: t.bento };
+  // nSanwa / nClever は記録一覧・CSVには表示しないが、あとで使えるよう保存だけしておく
+  const record = {
+    date: dateStr, attend: t.attend,
+    sanwa: t.sanwa, clever: t.clever, bento: t.bento,
+    nSanwa: t.nSanwa, nClever: t.nClever
+  };
   if (dupIdx >= 0) history[dupIdx] = record;
   else history.unshift(record); // 新しいものを先頭に
   saveHistory();
@@ -817,8 +861,8 @@ function clearAllHistory() {
 // ====================================================
 async function exportForExcel() {
   const present = [];
-  MEMBERS.forEach((m, i) => {
-    if (state.attend[i]) present.push(m.name);
+  MEMBERS.forEach((m) => {
+    if (isAttend(m)) present.push(m.name);
   });
   if (present.length === 0) {
     showToast('出勤者にチェックをつけてください', true);
@@ -892,7 +936,7 @@ async function exportForExcel() {
 // ====================================================
 function exportCSV() {
   if (history.length === 0) { showToast('記録がありません', true); return; }
-  const bom = '﻿';
+  const bom = '\uFEFF';
   const header = '日付,出勤人数,三和弁当,クレバー弁当,弁当合計\n';
   const rows = history.map(r =>
     `${r.date},${r.attend},${r.sanwa},${r.clever},${r.bento}`
